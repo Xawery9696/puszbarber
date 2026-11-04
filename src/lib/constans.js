@@ -36,3 +36,9 @@ export const labelOf = (list, value) =>
 
 export const formatDate = (iso) =>
   iso ? new Date(iso).toLocaleString("pl-PL") : "";
+
+export const statusVariant = (status) =>
+  status === "nowe" ? "default" : status === "w_realizacji" ? "secondary" : "outline";
+
+export const priorityVariant = (priority) =>
+  priority === "wysoki" ? "destructive" : priority === "sredni" ? "secondary" : "outline";

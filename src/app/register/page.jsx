@@ -5,12 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/components/auth-provider";
-import { FormField } from "@/components/form-field";
+import { useAuth } from "@/lib/auth";
 import { registerSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const FIELDS = [
+  { name: "name", label: "Imię", type: "text", autoComplete: "name" },
+  { name: "email", label: "E-mail", type: "email", autoComplete: "email" },
+  { name: "password", label: "Hasło", type: "password", autoComplete: "new-password" },
+  { name: "passwordConfirm", label: "Powtórz hasło", type: "password", autoComplete: "new-password" },
+];
 
 export default function RegisterPage() {
   const { user, ready, register: registerUser } = useAuth();
@@ -48,29 +55,32 @@ export default function RegisterPage() {
         <CardTitle>Rejestracja</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          <FormField label="Imię" htmlFor="name" error={errors.name?.message}>
-            <Input id="name" autoComplete="name" {...register("name")} />
-          </FormField>
-          <FormField label="E-mail" htmlFor="email" error={errors.email?.message}>
-            <Input id="email" type="email" autoComplete="email" {...register("email")} />
-          </FormField>
-          <FormField label="Hasło" htmlFor="password" error={errors.password?.message}>
-            <Input id="password" type="password" autoComplete="new-password" {...register("password")} />
-          </FormField>
-          <FormField label="Powtórz hasło" htmlFor="passwordConfirm" error={errors.passwordConfirm?.message}>
-            <Input id="passwordConfirm" type="password" autoComplete="new-password" {...register("passwordConfirm")} />
-          </FormField>
-          {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Zakładanie konta..." : "Załóż konto"}
-          </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            Masz już konto?{" "}
-            <Link href="/login" className="underline">
-              Zaloguj się
-            </Link>
-          </p>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <FieldGroup>
+            {FIELDS.map((f) => (
+              <Field key={f.name} data-invalid={!!errors[f.name]}>
+                <FieldLabel htmlFor={f.name}>{f.label}</FieldLabel>
+                <Input
+                  id={f.name}
+                  type={f.type}
+                  autoComplete={f.autoComplete}
+                  aria-invalid={!!errors[f.name]}
+                  {...register(f.name)}
+                />
+                {errors[f.name] && <FieldError errors={[errors[f.name]]} />}
+              </Field>
+            ))}
+            {errors.root && <FieldError errors={[errors.root]} />}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Zakładanie konta..." : "Załóż konto"}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Masz już konto?{" "}
+              <Link href="/login" className="underline">
+                Zaloguj się
+              </Link>
+            </p>
+          </FieldGroup>
         </form>
       </CardContent>
     </Card>
