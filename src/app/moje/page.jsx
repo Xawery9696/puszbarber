@@ -4,11 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { pb } from "@/lib/pocketbase";
-import { useRequireAuth } from "@/lib/auth";
+import { describeError, useRequireAuth } from "@/lib/auth";
 import { ticketSchema } from "@/lib/schemas";
 import { getFileToken, photoUrl } from "@/lib/files";
 import {
-  ROOMS,
   CATEGORIES,
   PRIORITIES,
   STATUSES,
@@ -26,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 
 const SELECTS = [
-  { name: "room", label: "Sala", options: ROOMS.map((r) => ({ value: r, label: r })) },
   { name: "category", label: "Kategoria", options: CATEGORIES },
   { name: "priority", label: "Priorytet", options: PRIORITIES },
 ];
@@ -62,8 +60,8 @@ export default function MojePage() {
       setToken(await getFileToken());
       setTickets(list);
       setLoadError("");
-    } catch {
-      setLoadError("Nie udało się pobrać zgłoszeń.");
+    } catch (err) {
+      setLoadError(describeError(err, "Nie udało się pobrać zgłoszeń"));
     }
   }, [userId]);
 
@@ -88,8 +86,8 @@ export default function MojePage() {
       reset();
       setSuccess(true);
       load();
-    } catch {
-      setError("root", { message: "Nie udało się dodać zgłoszenia. Sprawdź dane i spróbuj ponownie." });
+    } catch (err) {
+      setError("root", { message: describeError(err, "Nie udało się dodać zgłoszenia") });
     }
   }
 
@@ -117,6 +115,12 @@ export default function MojePage() {
               </Field>
 
               <div className="grid gap-4 sm:grid-cols-3">
+                <Field data-invalid={!!errors.room}>
+                  <FieldLabel htmlFor="room">Sala</FieldLabel>
+                  <Input id="room" placeholder="np. 103 albo pracownia 2" aria-invalid={!!errors.room} {...register("room")} />
+                  {errors.room && <FieldError errors={[errors.room]} />}
+                </Field>
+
                 {SELECTS.map((s) => (
                   <Controller
                     key={s.name}
@@ -127,7 +131,9 @@ export default function MojePage() {
                         <FieldLabel htmlFor={s.name}>{s.label}</FieldLabel>
                         <Select value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger id={s.name} className="w-full" aria-invalid={!!errors[s.name]}>
-                            <SelectValue placeholder="Wybierz..." />
+                            <SelectValue placeholder="Wybierz...">
+                              {field.value ? labelOf(s.options, field.value) : undefined}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {s.options.map((o) => (

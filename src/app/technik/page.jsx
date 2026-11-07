@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { pb } from "@/lib/pocketbase";
-import { useRequireAuth } from "@/lib/auth";
+import { describeError, useRequireAuth } from "@/lib/auth";
 import { getFileToken, photoUrl } from "@/lib/files";
 import {
-  ROOMS,
   STATUSES,
   PRIORITIES,
   CATEGORIES,
@@ -20,9 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const FILTERS = [
+const SELECT_FILTERS = [
   { key: "status", label: "Status", options: STATUSES },
-  { key: "room", label: "Sala", options: ROOMS.map((r) => ({ value: r, label: r })) },
   { key: "priority", label: "Priorytet", options: PRIORITIES },
 ];
 
@@ -31,20 +29,33 @@ export default function TechnikPage() {
   const [tickets, setTickets] = useState(null);
   const [token, setToken] = useState();
   const [error, setError] = useState("");
-  const [filters, setFilters] = useState({ status: "", room: "", priority: "" });
+  const [filters, setFilters] = useState({ status: "", priority: "", room: "" });
+  const [roomInput, setRoomInput] = useState("");
   const [drafts, setDrafts] = useState({}); // { [id]: { status, comment } }
   const [savingId, setSavingId] = useState(null);
   const [rowError, setRowError] = useState({});
+
+  // filtr sali uruchamia się dopiero chwilę po przestaniu pisania
+  useEffect(() => {
+    const t = setTimeout(() => setFilters((p) => ({ ...p, room: roomInput.trim() })), 400);
+    return () => clearTimeout(t);
+  }, [roomInput]);
 
   const load = useCallback(async () => {
     try {
       const parts = [];
       const params = {};
-      for (const { key } of FILTERS) {
-        if (filters[key]) {
-          parts.push(`${key} = {:${key}}`);
-          params[key] = filters[key];
-        }
+      if (filters.status) {
+        parts.push("status = {:status}");
+        params.status = filters.status;
+      }
+      if (filters.priority) {
+        parts.push("priority = {:priority}");
+        params.priority = filters.priority;
+      }
+      if (filters.room) {
+        parts.push("room ~ {:room}");
+        params.room = filters.room;
       }
       const list = await pb.collection("tickets").getFullList({
         sort: "-created",
@@ -55,8 +66,8 @@ export default function TechnikPage() {
       setTickets(list);
       setDrafts({});
       setError("");
-    } catch {
-      setError("Nie udało się pobrać zgłoszeń.");
+    } catch (err) {
+      setError(describeError(err, "Nie udało się pobrać zgłoszeń"));
     }
   }, [filters]);
 
@@ -78,8 +89,8 @@ export default function TechnikPage() {
         });
       }
       await load();
-    } catch {
-      setRowError((e) => ({ ...e, [t.id]: "Nie udało się zapisać zmian." }));
+    } catch (err) {
+      setRowError((e) => ({ ...e, [t.id]: describeError(err, "Nie udało się zapisać zmian") }));
     } finally {
       setSavingId(null);
     }
@@ -92,7 +103,7 @@ export default function TechnikPage() {
       <h1 className="text-xl font-semibold">Wszystkie zgłoszenia</h1>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        {FILTERS.map((f) => (
+        {SELECT_FILTERS.map((f) => (
           <Field key={f.key}>
             <FieldLabel htmlFor={`f-${f.key}`}>{f.label}</FieldLabel>
             <Select
@@ -100,7 +111,9 @@ export default function TechnikPage() {
               onValueChange={(v) => setFilters((prev) => ({ ...prev, [f.key]: v === "all" ? "" : v }))}
             >
               <SelectTrigger id={`f-${f.key}`} className="w-full">
-                <SelectValue />
+                <SelectValue>
+                  {filters[f.key] ? labelOf(f.options, filters[f.key]) : "Wszystkie"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Wszystkie</SelectItem>
@@ -113,6 +126,15 @@ export default function TechnikPage() {
             </Select>
           </Field>
         ))}
+        <Field>
+          <FieldLabel htmlFor="f-room">Sala</FieldLabel>
+          <Input
+            id="f-room"
+            placeholder="np. 103"
+            value={roomInput}
+            onChange={(e) => setRoomInput(e.target.value)}
+          />
+        </Field>
       </div>
 
       {error && <p className="text-destructive">{error}</p>}
@@ -166,7 +188,7 @@ export default function TechnikPage() {
                   <TableCell className="min-w-40">
                     <Select value={draft.status} onValueChange={(v) => setDraft({ status: v })}>
                       <SelectTrigger aria-label="Status" className="w-full">
-                        <SelectValue />
+                        <SelectValue>{labelOf(STATUSES, draft.status)}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {STATUSES.map((s) => (

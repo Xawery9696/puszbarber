@@ -29,7 +29,11 @@ export const ticketSchema = z.object({
     .string()
     .min(10, "Opisz usterkę dokładniej (min. 10 znaków)")
     .max(2000, "Opis może mieć maks. 2000 znaków"),
-  room: z.string().min(1, "Wybierz salę"),
+  room: z
+    .string()
+    .trim()
+    .min(1, "Wpisz numer lub nazwę sali")
+    .max(50, "Nazwa sali może mieć maks. 50 znaków"),
   category: z.string().min(1, "Wybierz kategorię"),
   priority: z.string().min(1, "Wybierz priorytet"),
   photo: z
