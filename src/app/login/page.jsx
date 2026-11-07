@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/lib/auth";
+import { describeError, useAuth } from "@/lib/auth";
 import { loginSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,8 +30,13 @@ export default function LoginPage() {
     try {
       await login(email, password);
       router.replace("/");
-    } catch {
-      setError("root", { message: "Nieprawidłowy e-mail lub hasło." });
+    } catch (err) {
+      setError("root", {
+        message:
+          err?.status === 400
+            ? "Nieprawidłowy e-mail lub hasło."
+            : describeError(err, "Nie udało się zalogować"),
+      });
     }
   }
 

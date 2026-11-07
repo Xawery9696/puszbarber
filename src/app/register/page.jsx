@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/lib/auth";
+import { describeError, useAuth } from "@/lib/auth";
 import { registerSchema } from "@/lib/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,7 @@ export default function RegisterPage() {
       } else if (data.password) {
         setError("password", { message: "Hasło jest niepoprawne (min. 8 znaków)." });
       } else {
-        setError("root", { message: "Nie udało się założyć konta. Spróbuj ponownie." });
+        setError("root", { message: describeError(err, "Nie udało się założyć konta") });
       }
     }
   }

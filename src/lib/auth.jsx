@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
   }
 
   async function register({ name, email, password, passwordConfirm }) {
-    // rola NIE jest wysyłana: nadaje ją tylko superużytkownik w panelu
+    // rola NIE jest wysyłana: nadaje ją tylko superużytkownik w panelu PocketBase
     await pb.collection("users").create({ name, email, password, passwordConfirm });
     await login(email, password);
   }
@@ -76,4 +76,32 @@ export function useRequireAuth(role) {
 
   const allowed = Boolean(ready && user && (!role || user.role === role));
   return { user, allowed };
+}
+
+// Zamienia błąd PocketBase na czytelny komunikat z konkretną przyczyną.
+export function describeError(err, fallback) {
+  const base = pb.baseURL;
+  const status = err?.status;
+
+  if (!base || base === "/") {
+    return "Brak adresu PocketBase w buildzie strony. W Coolify ustaw NEXT_PUBLIC_POCKETBASE_URL jako Build Variable i zrób Redeploy.";
+  }
+  if (
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    base.startsWith("http:")
+  ) {
+    return `Adres PocketBase (${base}) zaczyna się od http://, a strona działa na https://. Przeglądarka to blokuje. Użyj adresu https://.`;
+  }
+  if (status === 0) {
+    return `Brak połączenia z PocketBase pod adresem ${base}. Sprawdź, czy ${base}/api/health otwiera się w przeglądarce.`;
+  }
+  if (status === 404) {
+    return `PocketBase (${base}) zwrócił 404. Sprawdź, czy kolekcja users istnieje i czy adres wskazuje na PocketBase.`;
+  }
+  const data = err?.response?.data ?? {};
+  const first = Object.entries(data)[0];
+  if (first) return `${first[0]}: ${first[1]?.message ?? "niepoprawna wartość"}`;
+  const msg = err?.response?.message;
+  return `${fallback} (błąd ${status ?? "?"}${msg ? ": " + msg : ""}, adres: ${base})`;
 }

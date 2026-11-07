@@ -16,7 +16,10 @@ export default function RootLayout({ children }) {
         <title>Zgłoszenia usterek</title>
         <meta name="description" content="Aplikacja do zgłaszania usterek w szkole" />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body
+        className="min-h-screen bg-background text-foreground antialiased"
+        style={{ fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
+      >
         <AuthProvider>
           <AuthContext.Consumer>
             {({ user, logout }) => (
