@@ -1,4 +1,5 @@
 import { pb } from "@/lib/pocketbase";
+import { F } from "@/lib/constants";
 
 // Zdjęcia są chronione (Protected), więc do adresu potrzebny jest krótki token.
 export async function getFileToken() {
@@ -10,6 +11,7 @@ export async function getFileToken() {
 }
 
 export function photoUrl(record, token) {
-  if (!record?.photo) return null;
-  return pb.files.getURL(record, record.photo, token ? { token } : {});
+  const name = record?.[F.photo];
+  if (!name) return null;
+  return pb.files.getURL(record, name, token ? { token } : {});
 }

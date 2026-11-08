@@ -11,6 +11,8 @@ import {
   CATEGORIES,
   PRIORITIES,
   STATUSES,
+  COLLECTIONS,
+  F,
   labelOf,
   formatDate,
   statusVariant,
@@ -53,9 +55,9 @@ export default function MojePage() {
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      const list = await pb.collection("tickets").getFullList({
-        sort: "-created",
-        filter: pb.filter("author = {:id}", { id: userId }),
+      const list = await pb.collection(COLLECTIONS.tickets).getFullList({
+        sort: "-@rowid",
+        filter: pb.filter(`${F.author} = {:id}`, { id: userId }),
       });
       setToken(await getFileToken());
       setTickets(list);
@@ -73,16 +75,16 @@ export default function MojePage() {
     setSuccess(false);
     try {
       const fd = new FormData();
-      fd.append("title", values.title);
-      fd.append("description", values.description);
-      fd.append("room", values.room);
-      fd.append("category", values.category);
-      fd.append("priority", values.priority);
-      fd.append("status", "nowe");
-      fd.append("author", userId);
-      if (values.photo && values.photo.length > 0) fd.append("photo", values.photo[0]);
+      fd.append(F.title, values.title);
+      fd.append(F.description, values.description);
+      fd.append(F.room, values.room);
+      fd.append(F.category, labelOf(CATEGORIES, values.category));
+      fd.append(F.priority, values.priority);
+      fd.append(F.status, STATUSES[0].value);
+      fd.append(F.author, userId);
+      if (values.photo && values.photo.length > 0) fd.append(F.photo, values.photo[0]);
 
-      await pb.collection("tickets").create(fd);
+      await pb.collection(COLLECTIONS.tickets).create(fd);
       reset();
       setSuccess(true);
       load();
@@ -175,29 +177,28 @@ export default function MojePage() {
         )}
         {tickets?.map((t) => {
           const img = photoUrl(t, token);
+          const meta = [`Sala ${t[F.room]}`, t[F.category], formatDate(t.created)].filter(Boolean).join(" | ");
           return (
             <Card key={t.id}>
               <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:justify-between">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-medium">{t.title}</h3>
-                    <Badge variant={statusVariant(t.status)}>{labelOf(STATUSES, t.status)}</Badge>
-                    <Badge variant={priorityVariant(t.priority)}>{labelOf(PRIORITIES, t.priority)}</Badge>
+                    <h3 className="font-medium">{t[F.title]}</h3>
+                    <Badge variant={statusVariant(t[F.status])}>{labelOf(STATUSES, t[F.status])}</Badge>
+                    <Badge variant={priorityVariant(t[F.priority])}>{labelOf(PRIORITIES, t[F.priority])}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Sala {t.room} | {labelOf(CATEGORIES, t.category)} | {formatDate(t.created)}
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm">{t.description}</p>
-                  {t.comment && (
+                  <p className="text-sm text-muted-foreground">{meta}</p>
+                  <p className="whitespace-pre-wrap text-sm">{t[F.description]}</p>
+                  {t[F.comment] && (
                     <p className="text-sm">
-                      <span className="font-medium">Komentarz technika:</span> {t.comment}
+                      <span className="font-medium">Komentarz technika:</span> {t[F.comment]}
                     </p>
                   )}
                 </div>
                 {img && (
                   <a href={img} target="_blank" rel="noreferrer" className="shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt={`Zdjęcie usterki: ${t.title}`} className="h-24 w-24 rounded-md border object-cover" />
+                    <img src={img} alt={`Zdjęcie usterki: ${t[F.title]}`} className="h-24 w-24 rounded-md border object-cover" />
                   </a>
                 )}
               </CardContent>

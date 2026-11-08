@@ -7,7 +7,9 @@ import { getFileToken, photoUrl } from "@/lib/files";
 import {
   STATUSES,
   PRIORITIES,
-  CATEGORIES,
+  COLLECTIONS,
+  F,
+  EV,
   labelOf,
   formatDate,
   priorityVariant,
@@ -46,20 +48,20 @@ export default function TechnikPage() {
       const parts = [];
       const params = {};
       if (filters.status) {
-        parts.push("status = {:status}");
+        parts.push(`${F.status} = {:status}`);
         params.status = filters.status;
       }
       if (filters.priority) {
-        parts.push("priority = {:priority}");
+        parts.push(`${F.priority} = {:priority}`);
         params.priority = filters.priority;
       }
       if (filters.room) {
-        parts.push("room ~ {:room}");
+        parts.push(`${F.room} ~ {:room}`);
         params.room = filters.room;
       }
-      const list = await pb.collection("tickets").getFullList({
-        sort: "-created",
-        expand: "author",
+      const list = await pb.collection(COLLECTIONS.tickets).getFullList({
+        sort: "-@rowid",
+        expand: F.author,
         ...(parts.length ? { filter: pb.filter(parts.join(" && "), params) } : {}),
       });
       setToken(await getFileToken());
@@ -79,13 +81,16 @@ export default function TechnikPage() {
     setSavingId(t.id);
     setRowError((e) => ({ ...e, [t.id]: "" }));
     try {
-      await pb.collection("tickets").update(t.id, { status: draft.status, comment: draft.comment });
-      if (draft.status !== t.status) {
-        await pb.collection("ticket_events").create({
-          ticket: t.id,
-          actor: user.id,
-          from_status: t.status,
-          to_status: draft.status,
+      await pb.collection(COLLECTIONS.tickets).update(t.id, {
+        [F.status]: draft.status,
+        [F.comment]: draft.comment,
+      });
+      if (draft.status !== t[F.status]) {
+        await pb.collection(COLLECTIONS.events).create({
+          [EV.ticket]: t.id,
+          [EV.actor]: user.id,
+          [EV.from]: t[F.status],
+          [EV.to]: draft.status,
         });
       }
       await load();
@@ -158,22 +163,22 @@ export default function TechnikPage() {
           </TableHeader>
           <TableBody>
             {tickets.map((t) => {
-              const draft = drafts[t.id] ?? { status: t.status, comment: t.comment ?? "" };
-              const changed = draft.status !== t.status || draft.comment !== (t.comment ?? "");
+              const draft = drafts[t.id] ?? { status: t[F.status], comment: t[F.comment] ?? "" };
+              const changed = draft.status !== t[F.status] || draft.comment !== (t[F.comment] ?? "");
               const setDraft = (patch) => setDrafts((d) => ({ ...d, [t.id]: { ...draft, ...patch } }));
               const img = photoUrl(t, token);
-              const author = t.expand?.author;
+              const author = t.expand?.[F.author];
               return (
                 <TableRow key={t.id}>
                   <TableCell className="min-w-56 whitespace-normal">
-                    <div className="font-medium">{t.title}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(t.created)}</div>
-                    <div className="mt-1 text-sm">{t.description}</div>
+                    <div className="font-medium">{t[F.title]}</div>
+                    {t.created && <div className="text-xs text-muted-foreground">{formatDate(t.created)}</div>}
+                    <div className="mt-1 text-sm">{t[F.description]}</div>
                   </TableCell>
-                  <TableCell>{t.room}</TableCell>
-                  <TableCell>{labelOf(CATEGORIES, t.category)}</TableCell>
+                  <TableCell>{t[F.room]}</TableCell>
+                  <TableCell>{t[F.category]}</TableCell>
                   <TableCell>
-                    <Badge variant={priorityVariant(t.priority)}>{labelOf(PRIORITIES, t.priority)}</Badge>
+                    <Badge variant={priorityVariant(t[F.priority])}>{labelOf(PRIORITIES, t[F.priority])}</Badge>
                   </TableCell>
                   <TableCell>{author?.name || author?.email || "-"}</TableCell>
                   <TableCell>
