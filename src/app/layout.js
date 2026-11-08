@@ -14,11 +14,10 @@ export default function RootLayout({ children }) {
     <html lang="pl">
       <head>
         <title>Zgłoszenia usterek</title>
-        <meta name="description" content="Aplikacja do zgłaszania usterek w szkole" />
       </head>
       <body
         className="min-h-screen bg-background text-foreground antialiased"
-        style={{ fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
+        style={{ fontFamily: "system-ui, sans-serif" }}
       >
         <AuthProvider>
           <AuthContext.Consumer>

@@ -12,6 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+const FIELDS = [
+  { name: "email", label: "E-mail", type: "email", autoComplete: "email" },
+  { name: "password", label: "Hasło", type: "password", autoComplete: "current-password" },
+];
+
 export default function LoginPage() {
   const { user, ready, login } = useAuth();
   const router = useRouter();
@@ -31,12 +36,8 @@ export default function LoginPage() {
       await login(email, password);
       router.replace("/");
     } catch (err) {
-      setError("root", {
-        message:
-          err?.status === 400
-            ? "Nieprawidłowy e-mail lub hasło."
-            : describeError(err, "Nie udało się zalogować"),
-      });
+      const message = err?.status === 400 ? "Nieprawidłowy e-mail lub hasło." : describeError(err, "Nie udało się zalogować");
+      setError("root", { message });
     }
   }
 
@@ -48,16 +49,13 @@ export default function LoginPage() {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <FieldGroup>
-            <Field data-invalid={!!errors.email}>
-              <FieldLabel htmlFor="email">E-mail</FieldLabel>
-              <Input id="email" type="email" autoComplete="email" aria-invalid={!!errors.email} {...register("email")} />
-              {errors.email && <FieldError errors={[errors.email]} />}
-            </Field>
-            <Field data-invalid={!!errors.password}>
-              <FieldLabel htmlFor="password">Hasło</FieldLabel>
-              <Input id="password" type="password" autoComplete="current-password" aria-invalid={!!errors.password} {...register("password")} />
-              {errors.password && <FieldError errors={[errors.password]} />}
-            </Field>
+            {FIELDS.map((f) => (
+              <Field key={f.name} data-invalid={!!errors[f.name]}>
+                <FieldLabel htmlFor={f.name}>{f.label}</FieldLabel>
+                <Input id={f.name} type={f.type} autoComplete={f.autoComplete} aria-invalid={!!errors[f.name]} {...register(f.name)} />
+                {errors[f.name] && <FieldError errors={[errors[f.name]]} />}
+              </Field>
+            ))}
             {errors.root && <FieldError errors={[errors.root]} />}
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Logowanie..." : "Zaloguj się"}

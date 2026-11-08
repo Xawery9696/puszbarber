@@ -38,11 +38,8 @@ export default function RegisterPage() {
       await registerUser(values);
       router.replace("/");
     } catch (err) {
-      const data = err?.response?.data ?? {};
-      if (data.email) {
+      if (err?.response?.data?.email) {
         setError("email", { message: "Ten adres e-mail jest już zajęty lub niepoprawny." });
-      } else if (data.password) {
-        setError("password", { message: "Hasło jest niepoprawne (min. 8 znaków)." });
       } else {
         setError("root", { message: describeError(err, "Nie udało się założyć konta") });
       }
@@ -60,13 +57,7 @@ export default function RegisterPage() {
             {FIELDS.map((f) => (
               <Field key={f.name} data-invalid={!!errors[f.name]}>
                 <FieldLabel htmlFor={f.name}>{f.label}</FieldLabel>
-                <Input
-                  id={f.name}
-                  type={f.type}
-                  autoComplete={f.autoComplete}
-                  aria-invalid={!!errors[f.name]}
-                  {...register(f.name)}
-                />
+                <Input id={f.name} type={f.type} autoComplete={f.autoComplete} aria-invalid={!!errors[f.name]} {...register(f.name)} />
                 {errors[f.name] && <FieldError errors={[errors[f.name]]} />}
               </Field>
             ))}

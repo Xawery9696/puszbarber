@@ -8,15 +8,8 @@ import { describeError, useRequireAuth } from "@/lib/auth";
 import { ticketSchema } from "@/lib/schemas";
 import { getFileToken, photoUrl } from "@/lib/files";
 import {
-  CATEGORIES,
-  PRIORITIES,
-  STATUSES,
-  COLLECTIONS,
-  F,
-  labelOf,
-  formatDate,
-  statusVariant,
-  priorityVariant,
+  CATEGORIES, PRIORITIES, STATUSES, COLLECTIONS, F,
+  labelOf, formatDate, statusVariant, priorityVariant,
 } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,18 +27,13 @@ const SELECTS = [
 export default function MojePage() {
   const { allowed, user } = useRequireAuth();
   const userId = user?.id;
-
   const [tickets, setTickets] = useState(null);
   const [token, setToken] = useState();
   const [loadError, setLoadError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    setError,
+    register, control, handleSubmit, reset, setError,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(ticketSchema),
@@ -55,12 +43,13 @@ export default function MojePage() {
   const load = useCallback(async () => {
     if (!userId) return;
     try {
-      const list = await pb.collection(COLLECTIONS.tickets).getFullList({
-        sort: "-@rowid",
-        filter: pb.filter(`${F.author} = {:id}`, { id: userId }),
-      });
+      setTickets(
+        await pb.collection(COLLECTIONS.tickets).getFullList({
+          sort: "-@rowid",
+          filter: pb.filter(`${F.author} = {:id}`, { id: userId }),
+        })
+      );
       setToken(await getFileToken());
-      setTickets(list);
       setLoadError("");
     } catch (err) {
       setLoadError(describeError(err, "Nie udało się pobrać zgłoszeń"));
@@ -71,19 +60,22 @@ export default function MojePage() {
     if (allowed) load();
   }, [allowed, load]);
 
-  async function onSubmit(values) {
+  async function onSubmit(v) {
     setSuccess(false);
-    try {
-      const fd = new FormData();
-      fd.append(F.title, values.title);
-      fd.append(F.description, values.description);
-      fd.append(F.room, values.room);
-      fd.append(F.category, labelOf(CATEGORIES, values.category));
-      fd.append(F.priority, values.priority);
-      fd.append(F.status, STATUSES[0].value);
-      fd.append(F.author, userId);
-      if (values.photo && values.photo.length > 0) fd.append(F.photo, values.photo[0]);
+    const data = {
+      [F.title]: v.title,
+      [F.description]: v.description,
+      [F.room]: v.room,
+      [F.category]: labelOf(CATEGORIES, v.category),
+      [F.priority]: v.priority,
+      [F.status]: STATUSES[0].value,
+      [F.author]: userId,
+    };
+    const fd = new FormData();
+    Object.entries(data).forEach(([key, value]) => fd.append(key, value));
+    if (v.photo?.length) fd.append(F.photo, v.photo[0]);
 
+    try {
       await pb.collection(COLLECTIONS.tickets).create(fd);
       reset();
       setSuccess(true);
@@ -177,7 +169,6 @@ export default function MojePage() {
         )}
         {tickets?.map((t) => {
           const img = photoUrl(t, token);
-          const meta = [`Sala ${t[F.room]}`, t[F.category], formatDate(t.created)].filter(Boolean).join(" | ");
           return (
             <Card key={t.id}>
               <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:justify-between">
@@ -187,7 +178,9 @@ export default function MojePage() {
                     <Badge variant={statusVariant(t[F.status])}>{labelOf(STATUSES, t[F.status])}</Badge>
                     <Badge variant={priorityVariant(t[F.priority])}>{labelOf(PRIORITIES, t[F.priority])}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{meta}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {[`Sala ${t[F.room]}`, t[F.category], formatDate(t.created)].filter(Boolean).join(" | ")}
+                  </p>
                   <p className="whitespace-pre-wrap text-sm">{t[F.description]}</p>
                   {t[F.comment] && (
                     <p className="text-sm">
