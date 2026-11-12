@@ -9,9 +9,9 @@ Aplikacja do zgłaszania usterek w szkole. Użytkownik dodaje zgłoszenie (opcjo
 
 ## Zrzuty ekranu
 
-![Logowanie](docs/logowanie.png)
-![Użytkownik](docs/uzytkownik.png)
-![Technik](docs/technik.png)
+![Logowanie](docsy/logowanie.png)
+![Użytkownik](docsy/uzytkownik.png)
+![Technik](docsy/technik.png)
 
 ## Role i dostęp
 
