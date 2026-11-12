@@ -111,7 +111,7 @@ export default function MojePage() {
               <div className="grid gap-4 sm:grid-cols-3">
                 <Field data-invalid={!!errors.room}>
                   <FieldLabel htmlFor="room">Sala</FieldLabel>
-                  <Input id="room" placeholder="np. 103 albo pracownia 2" aria-invalid={!!errors.room} {...register("room")} />
+                  <Input id="room" placeholder="np. 103 " aria-invalid={!!errors.room} {...register("room")} />
                   {errors.room && <FieldError errors={[errors.room]} />}
                 </Field>
 
